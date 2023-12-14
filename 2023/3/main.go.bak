@@ -1,0 +1,88 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+)
+
+func main() {
+	file, err := os.Open("input.txt")
+
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	var textSlice []string
+
+	for scanner.Scan() {
+		textSlice = append(textSlice, scanner.Text())
+	}
+
+	totalRows := len(textSlice)
+	digitRegex := regexp.MustCompile(`\d+`)
+	symbolRegex := regexp.MustCompile(`[^\d.]+`)
+
+	sum := 0
+
+	for rowIndex, str := range textSlice {
+		numIndexes := digitRegex.FindAllStringIndex(str, -1)
+
+		for _, numIndex := range numIndexes {
+			numAsString := string(str[numIndex[0]:numIndex[1]])
+			var startRange, endRange int
+			if numIndex[0]-1 < 0 {
+				startRange = numIndex[0]
+			} else {
+				startRange = numIndex[0] - 1
+			}
+			if numIndex[1]+1 > len(str) {
+				endRange = numIndex[1]
+			} else {
+				endRange = numIndex[1] + 1
+			}
+
+			// looks at row above
+			if rowIndex-1 > 0 {
+				stringInQuestion := textSlice[rowIndex-1][startRange:endRange]
+				hasSpecialCharacter := symbolRegex.MatchString(stringInQuestion)
+
+				if hasSpecialCharacter {
+					numAsInt, _ := strconv.Atoi(numAsString)
+					sum += numAsInt
+					continue
+				}
+			}
+
+			// looks at row below
+			if rowIndex+1 < totalRows {
+				stringInQuestion := textSlice[rowIndex+1][startRange:endRange]
+				hasSpecialCharacter := symbolRegex.MatchString(stringInQuestion)
+
+				if hasSpecialCharacter {
+					numAsInt, _ := strconv.Atoi(numAsString)
+					sum += numAsInt
+					continue
+				}
+			}
+
+			stringInQuestion := str[startRange:endRange]
+			hasSpecialCharacter := symbolRegex.MatchString(stringInQuestion)
+
+			if hasSpecialCharacter {
+				numAsInt, _ := strconv.Atoi(numAsString)
+				sum += numAsInt
+				continue
+			}
+		}
+	}
+
+	fmt.Println(sum)
+}
