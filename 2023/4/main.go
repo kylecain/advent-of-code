@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	for scanner.Scan() {
 		textSlice = append(textSlice, scanner.Text())
 	}
-	
+
 	gameNumberToMatches := make(map[int]int)
 
 	sum := 0
@@ -54,7 +54,7 @@ func main() {
 			for _, card := range setOfCards {
 				value, exists := matchesMap[card]
 				if exists {
-					matchesMap[card] = value+1
+					matchesMap[card] = value + 1
 				} else {
 					matchesMap[card] = 1
 				}
@@ -67,9 +67,9 @@ func main() {
 				winningNumbers = append(winningNumbers, key)
 			}
 		}
-		
+
 		if len(winningNumbers) > 0 {
-			exp := len(winningNumbers)-1
+			exp := len(winningNumbers) - 1
 			sum += intPow(2, exp)
 			gameNumberToMatches[gameIndex] = len(winningNumbers)
 		} else {
@@ -83,13 +83,13 @@ func main() {
 	for i := range numOfCardsArray {
 		numOfCardsArray[i] = 1
 	}
-	
-	for i:=0;i<mapLength;i++ {
+
+	for i := 0; i < mapLength; i++ {
 		numOfMatchesArray = append(numOfMatchesArray, gameNumberToMatches[i])
 	}
 
 	for index, value := range numOfMatchesArray {
-		for i:=1;i<=value;i++ {
+		for i := 1; i <= value; i++ {
 			numOfCardsArray[index+i] = numOfCardsArray[index] + numOfCardsArray[index+i]
 		}
 	}
@@ -112,5 +112,3 @@ func intPow(base, exponent int) int {
 	}
 	return result
 }
-
-
