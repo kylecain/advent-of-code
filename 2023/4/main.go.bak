@@ -1,0 +1,96 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+	"strconv"
+)
+
+type Star struct {
+	X int
+	Y int
+}
+
+var starsMap = map[Star][]int{}
+
+func main() {
+	file, err := os.Open("input.txt")
+
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	var textSlice []string
+
+	for scanner.Scan() {
+		textSlice = append(textSlice, scanner.Text())
+	}
+	
+	sum := 0
+	for _, lineOfText := range textSlice {
+		splitText := strings.Split(lineOfText, ":")
+		cards := strings.Split(splitText[1], "|")
+
+		var strippedCards [][]string
+		for _, card := range cards {
+			strippedCards = append(strippedCards, strings.Fields(card))
+		}
+
+		var setOfCardsAsInts [][]int
+		for _, setOfCards := range strippedCards {
+			var arrayOfCards []int
+			for _, cardStr := range setOfCards {
+				cardInt, _ := strconv.Atoi(string(cardStr))
+				arrayOfCards = append(arrayOfCards, cardInt)
+			}
+			setOfCardsAsInts = append(setOfCardsAsInts, arrayOfCards)
+		}
+
+		var matchesMap = map[int]int{}
+
+		for _, setOfCards := range setOfCardsAsInts {
+			for _, card := range setOfCards {
+				value, exists := matchesMap[card]
+				if exists {
+					matchesMap[card] = value+1
+				} else {
+					matchesMap[card] = 1
+				}
+			}
+		}
+
+		var winningNumbers = []int{}
+		for key, value := range matchesMap {
+			if value > 1 {
+				winningNumbers = append(winningNumbers, key)
+			}
+		}
+		
+		if len(winningNumbers) > 0 {
+
+		exp := len(winningNumbers)-1
+			sum += intPow(2, exp)
+		}
+
+		fmt.Println(winningNumbers)
+	}
+	fmt.Println(sum)
+
+}
+
+func intPow(base, exponent int) int {
+	result := 1
+	for i := 0; i < exponent; i++ {
+		result *= base
+	}
+	return result
+}
+
+
