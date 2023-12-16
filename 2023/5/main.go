@@ -43,32 +43,37 @@ func main() {
 	}
 
 	seeds := seedsAndMaps[0]
+	k := 0
+	for {
+		seedFound := false
+		currentValue := k
 
-	for index, seed := range seeds {
-		value := seed
-		for i := 1; i < len(seedsAndMaps); i++ {
+		for i := len(seedsAndMaps) - 1; i >= 1; i-- {
 			currentMap := seedsAndMaps[i]
 
-			// check if between sources
-			for j := 1; j < len(currentMap); j = j + 3 {
+			for j := 0; j < len(currentMap); j = j + 3 {
 				lowerBound := currentMap[j]
-				upperBound := currentMap[j] + currentMap[j+1] - 1
-				if value >= lowerBound && value <= upperBound {
-					// if source matches look at desination
-					value = value - currentMap[j] + currentMap[j-1]
+				upperBound := currentMap[j] + currentMap[j+2] - 1
+				if currentValue >= lowerBound && currentValue <= upperBound {
+					currentValue = currentValue - currentMap[j] + currentMap[j+1]
 					break
 				}
 			}
 		}
-		seeds[index] = value
-	}
 
-	lowestNum := seeds[0]
-	for i := 1; i < len(seeds); i++ {
-		if seeds[i] < lowestNum {
-			lowestNum = seeds[i]
+		for m := 0; m < len(seeds); m = m + 2 {
+			if currentValue >= seeds[m] && currentValue <= seeds[m]+seeds[m+1] {
+				seedFound = true
+				break
+			}
+		}
+
+		if seedFound {
+			break
+		} else {
+			k++
 		}
 	}
 
-	fmt.Println(lowestNum)
+	fmt.Println(k)
 }
