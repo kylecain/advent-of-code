@@ -66,15 +66,21 @@ func main() {
 			handMap[r]++
 		}
 
-		highestValue, secondHighestValue := 0, 0
-		for _, value := range handMap {
-			if value >= highestValue {
-				secondHighestValue = highestValue
-				highestValue = value
-			} else if value >= secondHighestValue {
-				secondHighestValue = value
+		highestValue, secondHighestValue, jokerCount := 0, 0, 0
+		for key, value := range handMap {
+			if key == 74 {
+				jokerCount = value
+			} else {
+				if value >= highestValue {
+					secondHighestValue = highestValue
+					highestValue = value
+				} else if value >= secondHighestValue {
+					secondHighestValue = value
+				}
 			}
 		}
+
+		highestValue = highestValue + jokerCount
 
 		score := 0
 		if highestValue == 5 {
@@ -122,10 +128,6 @@ func main() {
 	s := 0
 	for i := 0; i < len(hands); i++ {
 		s += hands[i].Bid * (i + 1)
-	}
-
-	for _, hand := range hands {
-		fmt.Println(hand.Hand, hand.Bid)
 	}
 
 	fmt.Println(s)
