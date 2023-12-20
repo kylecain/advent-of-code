@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 )
 
@@ -219,5 +220,16 @@ func main() {
 		}
 	}
 
-	fmt.Println(linkedList.Length() / 2)
+	fmt.Println(linkedList.Length()/2 - 1)
+
+	current := linkedList.Head
+	sum := 0
+	for current.Next != nil {
+		left := current.X * current.Next.Y
+		right := current.Y * current.Next.X
+		fmt.Println(left, " - ", right)
+		sum += left - right
+		current = current.Next
+	}
+	fmt.Println(int(math.Abs(float64(sum))/2) - (linkedList.Length()/2 - 1))
 }
