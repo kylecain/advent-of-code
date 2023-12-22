@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
-	"strings"
 )
 
 type Point struct {
@@ -30,7 +30,8 @@ func main() {
 		universe = append(universe, scanner.Text())
 	}
 
-	var expansionIndicies []int
+	verticalIndicies := []int{}
+	horizontalIndicies := []int{}
 	for i, s := range universe {
 		hasGalaxy := false
 		for _, r := range s {
@@ -41,17 +42,9 @@ func main() {
 		}
 
 		if !hasGalaxy {
-			expansionIndicies = append(expansionIndicies, i)
+			verticalIndicies = append(verticalIndicies, i)
 		}
 	}
-
-	expansionString := strings.Repeat(".", len(universe[0]))
-
-	for i, j := range expansionIndicies {
-		universe = append(universe[:j+i], append([]string{expansionString}, universe[j+i:]...)...)
-	}
-
-	expansionIndicies = []int{}
 
 	for j, _ := range universe[0] {
 		hasGalaxy := false
@@ -63,13 +56,7 @@ func main() {
 		}
 
 		if !hasGalaxy {
-			expansionIndicies = append(expansionIndicies, j)
-		}
-	}
-
-	for i, j := range expansionIndicies {
-		for k := range universe {
-			universe[k] = universe[k][:j+i] + "." + universe[k][j+i:]
+			horizontalIndicies = append(horizontalIndicies, j)
 		}
 	}
 
@@ -82,45 +69,41 @@ func main() {
 		}
 	}
 
-	sum := 0
+	sum := 0.0
+	fmt.Println(horizontalIndicies)
+	fmt.Println(verticalIndicies)
 	for i, point := range points {
 		for j := i + 1; j < len(points); j++ {
-			sum += findShortestPath(universe, point, points[j])
-		}
-	}
-	fmt.Println(sum)
-}
+			x1, x2 := point.X, points[j].X
+			y1, y2 := point.Y, points[j].Y
+			x1Add, x2Add, y1Add, y2Add := 0, 0, 0, 0
+			expandBy := 1000000 - 1
 
-func findShortestPath(universe []string, start Point, end Point) int {
-	directions := [4][2]int{{-1, 0}, {1, 0}, {0, 1}, {0, -1}}
-	queue := []struct {
-		point  Point
-		length int
-	}{{start, 0}}
-	visited := make(map[Point]bool)
-
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-
-		if current.point == end {
-			return current.length
-		}
-
-		for _, direction := range directions {
-			x := current.point.X + direction[0]
-			y := current.point.Y + direction[1]
-
-			if x >= 0 && x < len(universe[0]) && y >= 0 && y < len(universe) && !visited[Point{x, y}] {
-				visited[Point{x, y}] = true
-
-				queue = append(queue, struct {
-					point  Point
-					length int
-				}{Point{x, y}, current.length + 1})
+			for _, ind := range horizontalIndicies {
+				if ind < x1 {
+					x1Add += expandBy
+				}
+				if ind < x2 {
+					x2Add += expandBy
+				}
 			}
+			for _, ind := range verticalIndicies {
+				if ind < y1 {
+					y1Add += expandBy
+				}
+				if ind < y2 {
+					y2Add += expandBy
+				}
+			}
+
+			x1 += x1Add
+			x2 += x2Add
+			y1 += y1Add
+			y2 += y2Add
+
+			sum += math.Abs(float64(x1-x2)) + math.Abs(float64(y1-y2))
 		}
 	}
 
-	return -1
+	fmt.Println(int(sum))
 }
