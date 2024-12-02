@@ -1,0 +1,82 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
+
+func main() {
+    file, err := os.Open("input.txt")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+
+    safeCount := 0
+
+    for scanner.Scan() {
+        line := scanner.Text()
+        levels := strings.Fields(line)
+
+        previousLevel, err := strconv.Atoi(levels[0])
+
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+
+        direction := ""
+
+        for i := 1; i<len(levels); i++ {
+            currentLevel, err := strconv.Atoi(levels[i])
+
+            fmt.Println(currentLevel)
+
+            if err != nil {
+                fmt.Println(err)
+                return
+            }
+
+            if currentLevel > previousLevel {
+                if direction == "decending" { break }
+
+                fmt.Println("previous direction", direction)
+                direction = "accending"
+                fmt.Println("new direction", direction)
+
+            } else if currentLevel < previousLevel {
+                if direction == "accending" { break }
+
+                fmt.Println("previous direction", direction)
+                direction = "decending"
+                fmt.Println("new direction", direction)
+            } else { 
+                break
+            }
+
+            levelDifference := currentLevel - previousLevel
+            fmt.Println("level difference", levelDifference)
+            absLevelDifference := max(levelDifference, -levelDifference)
+            fmt.Println("abs level difference", absLevelDifference)
+
+            if absLevelDifference > 3 {
+                break
+            }
+
+            if i == len(levels) - 1 {
+                safeCount++
+            } else {
+                previousLevel = currentLevel
+            }
+        }
+
+    }
+    fmt.Println(safeCount)
+}
