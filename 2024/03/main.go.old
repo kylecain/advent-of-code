@@ -1,0 +1,57 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+)
+
+func main() {
+    file, err := os.Open("input.txt")
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+
+
+    sum := 0
+    for scanner.Scan() {
+        line := scanner.Text()
+
+        mulExp := regexp.MustCompile(`mul\([0-9]{1,3},[0-9]{1,3}\)`)
+        doExp := regexp.MustCompile(`do\(\)`)
+        dontExp := regexp.MustCompile(`don't\(\)`)
+
+        mulMatches := mulExp.FindAllString(line, -1)
+        mulIndicies := mulExp.FindAllStringIndex(line, -1)
+
+        doMatches := doExp.FindAllString(line, -1)
+        doIndicies := doExp.FindAllStringIndex(line, -1)
+
+        dontMatches := dontExp.FindAllString(line, -1)
+        dontIndicies := dontExp.FindAllStringIndex(line, -1)
+
+        fmt.Println(mulMatches)
+        fmt.Println(doMatches)
+        fmt.Println(dontMatches)
+        fmt.Println(mulIndicies)
+        fmt.Println(doIndicies)
+        fmt.Println(dontIndicies)
+        // for i, v := range matches {
+        //     r1 := regexp.MustCompile(`[0-9]{1,3}`)
+        //     m1 := r1.FindAllString(v, 2)
+        //
+        //     x, _ := strconv.Atoi(m1[0])
+        //     y, _ := strconv.Atoi(m1[1])
+        //
+        //     sum += x * y
+        // }
+    }
+        fmt.Println(sum)
+}
