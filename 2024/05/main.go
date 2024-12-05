@@ -41,32 +41,22 @@ func main() {
 		} else {
 			updates = append(updates, numbers)
 		}
-
 	}
 
-	// partOne(rules, updates)
-	partTwo(rules, updates)
+	ruleMap := createRuleMap(rules)
+
+	partOne(updates, ruleMap)
+	partTwo(updates, ruleMap)
 }
 
-func partOne(rules, updates [][]string) {
-	ruleMap := make(map[string][]string)
-
+func partOne(updates [][]string, ruleMap map[string][]string) {
 	sum := 0
-
-	for _, rule := range rules {
-		ruleKey := rule[1]
-		ruleValue := rule[0]
-
-		ruleMap[ruleKey] = append(ruleMap[ruleKey], ruleValue)
-	}
 
 	for _, update := range updates {
 		isValid := true
 
 		for i, page := range update {
 			invalidPages := ruleMap[page]
-
-			fmt.Println(page, invalidPages)
 
 			for j := i + 1; j < len(update); j++ {
 				for _, invalidPage := range invalidPages {
@@ -95,16 +85,8 @@ func partOne(rules, updates [][]string) {
 	fmt.Println(sum)
 }
 
-func partTwo(rules, updates [][]string) {
-	ruleMap := make(map[string][]string)
+func partTwo(updates [][]string, ruleMap map[string][]string) {
 	invalidUpdates := [][]string{}
-
-	for _, rule := range rules {
-		ruleKey := rule[1]
-		ruleValue := rule[0]
-
-		ruleMap[ruleKey] = append(ruleMap[ruleKey], ruleValue)
-	}
 
 	for _, update := range updates {
 		isValid := true
@@ -151,4 +133,17 @@ func partTwo(rules, updates [][]string) {
 	}
 
 	fmt.Println(sum)
+}
+
+func createRuleMap(rules [][]string) map[string][]string {
+	ruleMap := make(map[string][]string)
+
+	for _, rule := range rules {
+		ruleKey := rule[1]
+		ruleValue := rule[0]
+
+		ruleMap[ruleKey] = append(ruleMap[ruleKey], ruleValue)
+	}
+
+	return ruleMap
 }
