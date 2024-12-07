@@ -55,7 +55,7 @@ func main() {
 		left:  up,
 	}
 
-	// partOne(labMap, nextDirections, x, y)
+	partOne(labMap, nextDirections, x, y)
 	partTwo(labMap, nextDirections, x, y)
 }
 
