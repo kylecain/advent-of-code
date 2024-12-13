@@ -122,17 +122,11 @@ func isValidCorner(p Point, d1 Point, d2 Point, grid [][]string) bool {
 		} else {
 			return false
 		}
-	} else if isD1InBounds {
-		if !isD2InBounds {
-			return grid[d1.i][d1.j] != grid[p.i][p.j]
-		} else {
-			return false
-		}
-	} else {
-		if !isD1InBounds {
-			return grid[d2.i][d2.j] != grid[p.i][p.j]
-		} else {
-			return false
-		}
+	} else if isD1InBounds && !isD2InBounds {
+		return grid[d1.i][d1.j] != grid[p.i][p.j]
+	} else if isD2InBounds && !isD1InBounds {
+		return grid[d2.i][d2.j] != grid[p.i][p.j]
 	}
+
+	return false
 }
