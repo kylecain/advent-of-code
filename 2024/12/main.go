@@ -20,6 +20,13 @@ var directions = []Point{
 	up, down, left, right,
 }
 
+var cornerCombinations = [][]Point{
+	{up, left},
+	{up, right},
+	{down, left},
+	{down, right},
+}
+
 func main() {
 	file, err := os.Open("input.txt")
 	if err != nil {
@@ -71,13 +78,6 @@ func solve(grid [][]string) {
 	fmt.Println("part two:", partTwo)
 }
 
-var cornerCombinations = [][]Point{
-	[]Point{up, left},
-	[]Point{up, right},
-	[]Point{down, left},
-	[]Point{down, right},
-}
-
 func findFences(p Point, grid [][]string, visited map[Point]bool, perimeter *int, area *int, corners *int) {
 	visited[p] = true
 	*area++
@@ -94,14 +94,8 @@ func findFences(p Point, grid [][]string, visited map[Point]bool, perimeter *int
 
 		if isValid(p, p1, grid, visited) {
 			findFences(p1, grid, visited, perimeter, area, corners)
-		} else {
-			if isInBounds(p1, grid) {
-				if grid[p.i][p.j] != grid[p1.i][p1.j] {
-					*perimeter++
-				}
-			} else {
-				*perimeter++
-			}
+		} else if !isInBounds(p1, grid) || grid[p.i][p.j] != grid[p1.i][p1.j] {
+			*perimeter++
 		}
 	}
 }
