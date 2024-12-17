@@ -163,14 +163,25 @@ func (r *Robot) move(grid [][]string, part int) {
     move := r.moves[0]
     r.moves = r.moves[1:]
     p := directionMap[move]
-    fmt.Println("move: ")
+    fmt.Println("move: ", move)
 
     if part == 1 {
         if r.moveInDirection(grid, r.p.i, r.p.j, p) {
             r.p = Point{r.p.i + p.i, r.p.j + p.j}
         }
     } else {
-        if r.moveInDirection2(grid, r.p, p) {
+        pointsAhead := []Point{Point{r.p.i + p. i, r.p.j + p.j}}
+        pointsBehind := []Point{Point{r.p.i, r.p.j}}
+        charAhead := grid[r.p.i + p.i][r.p.j + p.j]
+        if charAhead == "[" && (p == up || p == down){
+            pointsAhead = append(pointsAhead, Point{pointsAhead[0].i, pointsAhead[0].j + right.j})
+            pointsBehind= append(pointsBehind, Point{pointsBehind[0].i, pointsBehind[0].j + right.j})
+        }
+        if charAhead == "]" && (p == up || p == down){
+            pointsAhead = append(pointsAhead, Point{pointsAhead[0].i, pointsAhead[0].j + left.j})
+            pointsBehind= append(pointsBehind, Point{pointsBehind[0].i, pointsBehind[0].j + left.j})
+        }
+        if r.moveInDirection2(grid, p, pointsAhead, pointsBehind) {
             r.p = Point{r.p.i + p.i, r.p.j + p.j}
         }
     }
@@ -194,32 +205,47 @@ func (r *Robot) moveInDirection(grid [][]string, i int, j int, p Point) bool {
     return true
 }
 
-func (r *Robot) moveInDirection2(grid [][]string, current Point, direction Point) bool {
-    i1, j1 := current.i + direction.i, current.j + direction.j
-    characterAhead := grid[i1][j1]
-    pointsAhead := []Point{{i1, j1}}
-
-    if characterAhead == "#" {
-        return false
-    } else if characterAhead == "." {
-        grid[i1][j1], grid[current.i][current.j] = grid[current.i][current.j], grid[i1][j1]
-        return true
-    } else if characterAhead == "]" {
-        pointsAhead = append(pointsAhead, Point{i1, j1 + left.j})
-    } else if characterAhead == "[" {
-        pointsAhead = append(pointsAhead, Point{i1, j1 + right.j})
+func (r *Robot) moveInDirection2(grid [][]string, direction Point, pointsAhead []Point, pointsBehind []Point) bool {
+    if len(pointsAhead) > 1 {
+        if grid[pointsAhead[0].i][pointsAhead[0].j] == "#" || grid[pointsAhead[1].i][pointsAhead[1].j] == "#" {
+            return false
+        }
+    } else {
+        if grid[pointsAhead[0].i][pointsAhead[0].j] == "#" {
+            return false
+        }
     }
 
+    if len(pointsAhead) > 1 {
+        if grid[pointsAhead[0].i][pointsAhead[0].j] == "." && grid[pointsAhead[1].i][pointsAhead[1].j] == "." {
+            grid[pointsAhead[0].i][pointsAhead[0].j], grid[pointsBehind[0].i][pointsBehind[0].j] = grid[pointsBehind[0].i][pointsBehind[0].j], grid[pointsAhead[0].i][pointsAhead[0].j]
+            grid[pointsAhead[1].i][pointsAhead[1].j], grid[pointsBehind[1].i][pointsBehind[1].j] = grid[pointsBehind[1].i][pointsBehind[1].j], grid[pointsAhead[1].i][pointsAhead[1].j]
+            printGrid(grid)
+            return true
+        }
+    } else {
+        if grid[pointsAhead[0].i][pointsAhead[0].j] == "." {
+            grid[pointsAhead[0].i][pointsAhead[0].j], grid[pointsBehind[0].i][pointsBehind[0].j] = grid[pointsBehind[0].i][pointsBehind[0].j], grid[pointsAhead[0].i][pointsAhead[0].j]
+            return true
+        }
+    }
+
+
     if direction == up || direction == down {
-        for _, point := range pointsAhead {
-            if r.moveInDirection2(grid, point, direction) {
-                fmt.Println("swapping:",grid[i1][j1], grid[current.i][current.j])
-                grid[i1][j1], grid[current.i][current.j] = grid[current.i][current.j], grid[i1][j1]
-            }
+        newPointsAhead := []Point{Point{pointsAhead[0].i + direction.i, pointsAhead[0].j + direction.j},Point{pointsAhead[1].i + direction.i, pointsAhead[1].j + direction.j}}
+        if r.moveInDirection2(grid, direction, newPointsAhead, pointsAhead) && r.moveInDirection2(grid, direction, newPointsAhead, pointsAhead) {
+            fmt.Println("swapping:",grid[pointsAhead[0].i][pointsAhead[0].j], grid[pointsBehind[0].i][pointsBehind[0].j])
+            fmt.Println("swapping:",grid[pointsAhead[1].i][pointsAhead[1].j], grid[pointsBehind[1].i][pointsBehind[1].j])
+            fmt.Println()
+
+            grid[pointsAhead[0].i][pointsAhead[0].j], grid[pointsBehind[0].i][pointsBehind[0].j] = grid[pointsBehind[0].i][pointsBehind[0].j], grid[pointsAhead[0].i][pointsAhead[0].j]
+            grid[pointsAhead[1].i][pointsAhead[1].j], grid[pointsBehind[1].i][pointsBehind[1].j] = grid[pointsBehind[1].i][pointsBehind[1].j], grid[pointsAhead[1].i][pointsAhead[1].j]
+            printGrid(grid)
         }
     } else if direction == left || direction == right {
-        if r.moveInDirection2(grid, pointsAhead[0], direction) {
-            grid[i1][j1], grid[current.i][current.j] = grid[current.i][current.j], grid[i1][j1]
+        newPointsAhead := []Point{Point{pointsAhead[0].i + direction.i, pointsAhead[0].j + direction.j}}
+        if r.moveInDirection2(grid, direction, newPointsAhead, pointsAhead) {
+            grid[pointsAhead[0].i][pointsAhead[0].j], grid[pointsBehind[0].i][pointsBehind[0].j] = grid[pointsBehind[0].i][pointsBehind[0].j], grid[pointsAhead[0].i][pointsAhead[0].j]
         }
     }
 
