@@ -13,6 +13,10 @@ type Point struct {
 	Row int
 }
 
+type Combination struct {
+	p1, p2 Point
+}
+
 func main() {
 	file, _ := os.Open("input.txt")
 	defer file.Close()
@@ -52,43 +56,37 @@ func part1(points []Point) int {
 func part2(points []Point) int {
 	grid := BuildGrid(points)
 	n := len(points)
+	work := make(chan Combination, 1000)
+	go func() {
+		for i := 0; i < n; i++ {
+			for j := i + 1; j < n; j++ {
+				work <- Combination{points[i], points[j]}
+			}
+		}
+		close(work)
+	}()
 
 	numWorkers := runtime.NumCPU()
-	chunkSize := (n + numWorkers - 1) / numWorkers
-	results := make(chan int, numWorkers)
 	var wg sync.WaitGroup
 	wg.Add(numWorkers)
+	results := make(chan int, numWorkers)
 
 	for w := 0; w < numWorkers; w++ {
-		start := w * chunkSize
-		end := min(start+chunkSize, n)
-
-		go func(start, end, workerID int) {
+		go func() {
 			defer wg.Done()
 			localMax := 0
-			chunkRows := end - start
-			logInterval := chunkRows / 100
-			if logInterval == 0 {
-				logInterval = 1
-			}
-
-			for i := start; i < end; i++ {
-				for j := i + 1; j < n; j++ {
-					if CheckGrid(grid, points[i], points[j]) {
-						x1, x2 := points[i].Col, points[j].Col
-						y1, y2 := points[i].Row, points[j].Row
-						x := abs(x1-x2) + 1
-						y := abs(y1-y2) + 1
-						a := x * y
-						if a > localMax {
-							localMax = a
-						}
+			for combination := range work {
+				if CheckGrid(grid, combination.p1, combination.p2) {
+					x := abs(combination.p1.Col-combination.p2.Col) + 1
+					y := abs(combination.p1.Row-combination.p2.Row) + 1
+					a := x * y
+					if a > localMax {
+						localMax = a
 					}
 				}
 			}
-
 			results <- localMax
-		}(start, end, w)
+		}()
 	}
 
 	wg.Wait()
