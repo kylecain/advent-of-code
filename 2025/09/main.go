@@ -4,19 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sort"
+	"runtime"
+	"sync"
 )
 
 type Point struct {
 	Col int
 	Row int
-}
-
-var Directions = []Point{
-	{-1, 0},
-	{1, 0},
-	{0, -1},
-	{0, 1},
 }
 
 func main() {
@@ -31,7 +25,7 @@ func main() {
 		points = append(points, Point{x, y})
 	}
 
-	// fmt.Println(part1(points))
+	fmt.Println(part1(points))
 	fmt.Println(part2(points))
 }
 
@@ -57,29 +51,127 @@ func part1(points []Point) int {
 
 func part2(points []Point) int {
 	grid := BuildGrid(points)
-	maxArea := 0
-	for i := 0; i < len(points); i++ {
-		for j := i + 1; j < len(points); j++ {
-			if CheckGrid(grid, points[i], points[j]) {
-				x1, x2 := points[i].Col, points[j].Col
-				y1, y2 := points[i].Row, points[j].Row
+	n := len(points)
 
-				x := ((x1 - x2) * 2 / 2) + 1
-				y := ((y1 - y2) * 2 / 2) + 1
+	numWorkers := runtime.NumCPU()
+	chunkSize := (n + numWorkers - 1) / numWorkers
+	results := make(chan int, numWorkers)
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
 
-				a := x * y
+	for w := 0; w < numWorkers; w++ {
+		start := w * chunkSize
+		end := min(start+chunkSize, n)
 
-				if a > maxArea {
-					maxArea = a
+		go func(start, end, workerID int) {
+			defer wg.Done()
+			localMax := 0
+			chunkRows := end - start
+			logInterval := chunkRows / 100
+			if logInterval == 0 {
+				logInterval = 1
+			}
+
+			for i := start; i < end; i++ {
+				for j := i + 1; j < n; j++ {
+					if CheckGrid(grid, points[i], points[j]) {
+						x1, x2 := points[i].Col, points[j].Col
+						y1, y2 := points[i].Row, points[j].Row
+						x := abs(x1-x2) + 1
+						y := abs(y1-y2) + 1
+						a := x * y
+						if a > localMax {
+							localMax = a
+						}
+					}
 				}
 			}
 
+			results <- localMax
+		}(start, end, w)
+	}
+
+	wg.Wait()
+	close(results)
+
+	maxArea := 0
+	for a := range results {
+		if a > maxArea {
+			maxArea = a
 		}
 	}
 	return maxArea
 }
 
-func BuildGrid(points []Point) [][]bool {
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
+func PrintBitGrid(grid [][]uint64, cols int) {
+	for _, row := range grid {
+		for c := 0; c < cols; c++ {
+			word := c / 64
+			bit := uint(c % 64)
+			if (row[word] & (1 << bit)) != 0 {
+				fmt.Print("1")
+			} else {
+				fmt.Print("0")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+func wordIndex(col int) (wordIdx int, bit uint) {
+	wordIdx = col / 64
+	bit = uint(col % 64)
+	return
+}
+
+func Set(grid [][]uint64, row, col int, value bool) {
+	w, b := wordIndex(col)
+	if value {
+		grid[row][w] |= 1 << b
+	} else {
+		grid[row][w] &^= 1 << b
+	}
+}
+
+func Get(grid [][]uint64, row, col int) bool {
+	w, b := wordIndex(col)
+	return (grid[row][w] & (1 << b)) != 0
+}
+
+func setRange(grid [][]uint64, row, start, end int) {
+	if start > end {
+		return
+	}
+
+	sw, sb := wordIndex(start)
+	ew, eb := wordIndex(end)
+
+	if sw == ew {
+		length := uint(eb - sb + 1)
+		mask := ((uint64(1) << length) - 1) << sb
+		grid[row][sw] |= mask
+		return
+	}
+
+	startMask := ^uint64(0) << sb
+	grid[row][sw] |= startMask
+
+	for w := sw + 1; w <= ew-1; w++ {
+		grid[row][w] = ^uint64(0)
+	}
+
+	endMask := (uint64(1) << uint(eb+1)) - 1
+	grid[row][ew] |= endMask
+}
+
+func BuildGrid(points []Point) [][]uint64 {
 	rows, cols := 0, 0
 	rowPadding, colPadding := 2, 3
 	for _, p := range points {
@@ -95,21 +187,14 @@ func BuildGrid(points []Point) [][]bool {
 	rows += rowPadding
 	cols += colPadding
 
-	// knownPoint := Point{cols / 2, rows / 3}
-	// knownPoint := Point{9, 4}
-	grid := make([][]bool, rows)
+	words := (cols + 63) / 64
+	grid := make([][]uint64, rows)
 	for i := range grid {
-		grid[i] = make([]bool, cols)
-	}
-
-	for i := range grid {
-		for j := range grid[i] {
-			grid[i][j] = false
-		}
+		grid[i] = make([]uint64, words)
 	}
 
 	for i, p := range points {
-		grid[p.Row][p.Col] = true
+		Set(grid, p.Row, p.Col, true)
 
 		nextI := i + 1
 		if nextI == len(points) {
@@ -117,11 +202,11 @@ func BuildGrid(points []Point) [][]bool {
 		}
 
 		for _, pp := range PointsBetween(p, points[nextI]) {
-			grid[pp.Row][pp.Col] = true
+			Set(grid, pp.Row, pp.Col, true)
 		}
 	}
 
-	Fill(grid)
+	Fill(grid, cols)
 
 	return grid
 }
@@ -158,35 +243,62 @@ func PointsBetween(p1, p2 Point) []Point {
 	return points
 }
 
-func Fill(grid [][]bool) {
-	for row := 0; row < len(grid); row++ {
-		var cols []int
-		prev := false
-		for col := 0; col < len(grid[0]); col++ {
-			if grid[row][col] && !prev {
-				cols = append(cols, col)
+func Fill(grid [][]uint64, cols int) {
+	nRows := len(grid)
+	if nRows == 0 || cols <= 0 {
+		return
+	}
+
+	numWorkers := runtime.NumCPU()
+	chunkSize := (nRows + numWorkers - 1) / numWorkers
+
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+
+	for w := 0; w < numWorkers; w++ {
+		startRow := w * chunkSize
+		endRow := min(startRow+chunkSize, nRows)
+
+		go func(start, end, workerID int) {
+			defer wg.Done()
+			chunkRows := end - start
+			logInterval := chunkRows / 100
+			if logInterval == 0 {
+				logInterval = 1
 			}
-			prev = grid[row][col]
-		}
 
-		if len(cols) < 2 {
-			continue
-		}
+			for row := start; row < end; row++ {
+				var edges []int
+				prev := false
+				for col := 0; col < cols; col++ {
+					cur := Get(grid, row, col)
+					if cur && !prev {
+						edges = append(edges, col)
+					}
+					prev = cur
+				}
 
-		for i := 0; i+1 < len(cols); i += 2 {
-			col1, col2 := cols[i], cols[i+1]
-			for col := col1 + 1; col < col2; col++ {
-				if !grid[row][col] {
-					grid[row][col] = true
+				if len(edges) >= 2 {
+					for i := 0; i+1 < len(edges); i += 2 {
+						col1, col2 := edges[i], edges[i+1]
+						startCol := col1 + 1
+						endCol := col2 - 1
+						if startCol <= endCol {
+							setRange(grid, row, startCol, endCol)
+						}
+					}
 				}
 			}
-		}
+		}(startRow, endRow, w)
 	}
+
+	wg.Wait()
 }
 
-func CheckGrid(grid [][]bool, p1, p2 Point) bool {
+func CheckGrid(grid [][]uint64, p1, p2 Point) bool {
 	row1, col1 := p1.Col, p1.Row
 	row2, col2 := p2.Col, p2.Row
+
 	if row1 > row2 {
 		row1, row2 = row2, row1
 	}
@@ -195,24 +307,26 @@ func CheckGrid(grid [][]bool, p1, p2 Point) bool {
 	}
 
 	for row := col1; row <= col2; row++ {
-		for col := row1; col <= row2; col++ {
-			if !grid[row][col] {
+		startWord, startBit := wordIndex(row1)
+		endWord, endBit := wordIndex(row2)
+
+		for w := startWord; w <= endWord; w++ {
+			word := grid[row][w]
+			mask := ^uint64(0)
+
+			if w == startWord {
+				mask &= ^uint64(0) << startBit
+			}
+
+			if w == endWord {
+				mask &= (uint64(1) << (endBit + 1)) - 1
+			}
+
+			if word&mask != mask {
 				return false
 			}
 		}
 	}
-	return true
-}
 
-func PrintGrid(grid [][]bool) {
-	for _, line := range grid {
-		for _, v := range line {
-			if v {
-				fmt.Print("#")
-			} else {
-				fmt.Print(".")
-			}
-		}
-		fmt.Println()
-	}
+	return true
 }
