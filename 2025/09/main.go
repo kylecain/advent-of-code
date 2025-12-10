@@ -79,7 +79,6 @@ func part2(points []Point) int {
 }
 
 func BuildGrid(points []Point) [][]rune {
-	knownPoint := Point{8, 2}
 	rows, cols := 0, 0
 	rowPadding, colPadding := 2, 3
 	for _, p := range points {
@@ -93,6 +92,7 @@ func BuildGrid(points []Point) [][]rune {
 
 	}
 
+	knownPoint := Point{cols / 2, rows / 3}
 	grid := make([][]rune, rows+rowPadding)
 	for i := range grid {
 		grid[i] = make([]rune, cols+colPadding)
@@ -153,14 +153,22 @@ func PointsBetween(p1, p2 Point) []Point {
 }
 
 func Fill(p Point, grid [][]rune) {
-	if grid[p.Row][p.Col] != '.' {
-		return
-	}
+	stack := []Point{p}
 
-	grid[p.Row][p.Col] = 'X'
+	for len(stack) > 0 {
+		current := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
 
-	for _, d := range Directions {
-		Fill(Point{p.Col + d.Col, p.Row + d.Row}, grid)
+		if grid[current.Row][current.Col] != '.' {
+			continue
+		}
+
+		grid[current.Row][current.Col] = 'X'
+
+		for _, d := range Directions {
+			newPoint := Point{current.Col + d.Col, current.Row + d.Row}
+			stack = append(stack, newPoint)
+		}
 	}
 }
 
