@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 )
 
 type Point struct {
@@ -91,12 +92,14 @@ func BuildGrid(points []Point) [][]bool {
 		}
 
 	}
+	rows += rowPadding
+	cols += colPadding
 
 	// knownPoint := Point{cols / 2, rows / 3}
-	knownPoint := Point{9, 4}
-	grid := make([][]bool, rows+rowPadding)
+	// knownPoint := Point{9, 4}
+	grid := make([][]bool, rows)
 	for i := range grid {
-		grid[i] = make([]bool, cols+colPadding)
+		grid[i] = make([]bool, cols)
 	}
 
 	for i := range grid {
@@ -118,28 +121,8 @@ func BuildGrid(points []Point) [][]bool {
 		}
 	}
 
-	for _, line := range grid {
-		for _, v := range line {
-			if v {
-				fmt.Print("#")
-			} else {
-				fmt.Print(".")
-			}
-		}
-		fmt.Println()
-	}
-	Fill(knownPoint, grid)
+	Fill(grid)
 
-	for _, line := range grid {
-		for _, v := range line {
-			if v {
-				fmt.Print("#")
-			} else {
-				fmt.Print(".")
-			}
-		}
-		fmt.Println()
-	}
 	return grid
 }
 
@@ -147,7 +130,7 @@ func PointsBetween(p1, p2 Point) []Point {
 	var points []Point
 
 	if p1.Row == p2.Row {
-		d := 1 // p1 col < p2 col
+		d := 1
 		if p1.Col > p2.Col {
 			d = -1
 		}
@@ -157,8 +140,10 @@ func PointsBetween(p1, p2 Point) []Point {
 		}
 
 		return points
-	} else if p1.Col == p2.Col {
-		d := 1 // p1 row < p2 row
+	}
+
+	if p1.Col == p2.Col {
+		d := 1
 		if p1.Row > p2.Row {
 			d = -1
 		}
@@ -173,42 +158,61 @@ func PointsBetween(p1, p2 Point) []Point {
 	return points
 }
 
-func Fill(p Point, grid [][]bool) {
-	stack := []Point{p}
+func Fill(grid [][]bool) {
+	for row := 0; row < len(grid); row++ {
+		var cols []int
+		prev := false
+		for col := 0; col < len(grid[0]); col++ {
+			if grid[row][col] && !prev {
+				cols = append(cols, col)
+			}
+			prev = grid[row][col]
+		}
 
-	for len(stack) > 0 {
-		current := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if grid[current.Row][current.Col] {
+		if len(cols) < 2 {
 			continue
 		}
 
-		grid[current.Row][current.Col] = true
-
-		for _, d := range Directions {
-			newPoint := Point{current.Col + d.Col, current.Row + d.Row}
-			stack = append(stack, newPoint)
+		for i := 0; i+1 < len(cols); i += 2 {
+			col1, col2 := cols[i], cols[i+1]
+			for col := col1 + 1; col < col2; col++ {
+				if !grid[row][col] {
+					grid[row][col] = true
+				}
+			}
 		}
 	}
 }
 
 func CheckGrid(grid [][]bool, p1, p2 Point) bool {
-	x1, y1 := p1.Col, p1.Row
-	x2, y2 := p2.Col, p2.Row
-	if x1 > x2 {
-		x1, x2 = x2, x1
+	row1, col1 := p1.Col, p1.Row
+	row2, col2 := p2.Col, p2.Row
+	if row1 > row2 {
+		row1, row2 = row2, row1
 	}
-	if y1 > y2 {
-		y1, y2 = y2, y1
+	if col1 > col2 {
+		col1, col2 = col2, col1
 	}
 
-	for y := y1; y <= y2; y++ {
-		for x := x1; x <= x2; x++ {
-			if !grid[y][x] {
+	for row := col1; row <= col2; row++ {
+		for col := row1; col <= row2; col++ {
+			if !grid[row][col] {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+func PrintGrid(grid [][]bool) {
+	for _, line := range grid {
+		for _, v := range line {
+			if v {
+				fmt.Print("#")
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Println()
+	}
 }
