@@ -78,7 +78,7 @@ func part2(points []Point) int {
 	return maxArea
 }
 
-func BuildGrid(points []Point) [][]rune {
+func BuildGrid(points []Point) [][]bool {
 	rows, cols := 0, 0
 	rowPadding, colPadding := 2, 3
 	for _, p := range points {
@@ -92,20 +92,21 @@ func BuildGrid(points []Point) [][]rune {
 
 	}
 
-	knownPoint := Point{cols / 2, rows / 3}
-	grid := make([][]rune, rows+rowPadding)
+	// knownPoint := Point{cols / 2, rows / 3}
+	knownPoint := Point{9, 4}
+	grid := make([][]bool, rows+rowPadding)
 	for i := range grid {
-		grid[i] = make([]rune, cols+colPadding)
+		grid[i] = make([]bool, cols+colPadding)
 	}
 
 	for i := range grid {
 		for j := range grid[i] {
-			grid[i][j] = '.'
+			grid[i][j] = false
 		}
 	}
 
 	for i, p := range points {
-		grid[p.Row][p.Col] = '#'
+		grid[p.Row][p.Col] = true
 
 		nextI := i + 1
 		if nextI == len(points) {
@@ -113,12 +114,32 @@ func BuildGrid(points []Point) [][]rune {
 		}
 
 		for _, pp := range PointsBetween(p, points[nextI]) {
-			grid[pp.Row][pp.Col] = 'X'
+			grid[pp.Row][pp.Col] = true
 		}
 	}
 
+	for _, line := range grid {
+		for _, v := range line {
+			if v {
+				fmt.Print("#")
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Println()
+	}
 	Fill(knownPoint, grid)
 
+	for _, line := range grid {
+		for _, v := range line {
+			if v {
+				fmt.Print("#")
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Println()
+	}
 	return grid
 }
 
@@ -152,18 +173,18 @@ func PointsBetween(p1, p2 Point) []Point {
 	return points
 }
 
-func Fill(p Point, grid [][]rune) {
+func Fill(p Point, grid [][]bool) {
 	stack := []Point{p}
 
 	for len(stack) > 0 {
 		current := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 
-		if grid[current.Row][current.Col] != '.' {
+		if grid[current.Row][current.Col] {
 			continue
 		}
 
-		grid[current.Row][current.Col] = 'X'
+		grid[current.Row][current.Col] = true
 
 		for _, d := range Directions {
 			newPoint := Point{current.Col + d.Col, current.Row + d.Row}
@@ -172,7 +193,7 @@ func Fill(p Point, grid [][]rune) {
 	}
 }
 
-func CheckGrid(grid [][]rune, p1, p2 Point) bool {
+func CheckGrid(grid [][]bool, p1, p2 Point) bool {
 	x1, y1 := p1.Col, p1.Row
 	x2, y2 := p2.Col, p2.Row
 	if x1 > x2 {
@@ -184,7 +205,7 @@ func CheckGrid(grid [][]rune, p1, p2 Point) bool {
 
 	for y := y1; y <= y2; y++ {
 		for x := x1; x <= x2; x++ {
-			if grid[y][x] == '.' {
+			if !grid[y][x] {
 				return false
 			}
 		}
